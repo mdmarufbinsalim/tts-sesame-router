@@ -207,9 +207,16 @@ button { font-family: inherit; }
   background: var(--input); border-radius: var(--radius); padding: 8px 10px;
 }
 .composer textarea {
-  flex: 1; resize: none; max-height: 200px; min-height: 24px;
+  flex: 1; resize: none; max-height: 200px; min-height: 24px; overflow-y: auto;
   background: transparent; color: var(--text); border: none; outline: none;
   font: inherit; line-height: 1.4; padding: 6px 2px;
+}
+/* slim themed scrollbars for the textareas (matches the message list) */
+.composer textarea, .sys-text { scrollbar-width: thin; scrollbar-color: #202225 transparent; }
+.composer textarea::-webkit-scrollbar, .sys-text::-webkit-scrollbar { width: 8px; }
+.composer textarea::-webkit-scrollbar-track, .sys-text::-webkit-scrollbar-track { background: transparent; }
+.composer textarea::-webkit-scrollbar-thumb, .sys-text::-webkit-scrollbar-thumb {
+  background: #202225; border-radius: 6px; border: 2px solid transparent; background-clip: content-box;
 }
 .composer textarea::placeholder { color: var(--faint); }
 .compose-btn {

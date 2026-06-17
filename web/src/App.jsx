@@ -185,6 +185,15 @@ export default function App() {
   const [minimized, setMinimized] = useState(() => localStorage.getItem('sesame.mini') === '1');
   const [darkEmbed, setDarkEmbed] = useState(() => localStorage.getItem('sesame.dark') !== '0');
   const scrollRef = useRef(null);
+  const composerRef = useRef(null);
+
+  // Auto-grow the composer with its content (ChatGPT-style), capped by CSS max-height.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [text]);
 
   useEffect(() => { localStorage.setItem('sesame.mini', minimized ? '1' : '0'); }, [minimized]);
   useEffect(() => { localStorage.setItem('sesame.dark', darkEmbed ? '1' : '0'); }, [darkEmbed]);
@@ -340,6 +349,7 @@ export default function App() {
               title="Delivery & emotion"
             >🎭</button>
             <textarea
+              ref={composerRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={onKeyDown}
