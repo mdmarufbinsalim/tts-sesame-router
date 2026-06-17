@@ -149,6 +149,7 @@ button { font-family: inherit; }
 
 .stage { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; padding: 2px 0; }
 .stage.err { color: var(--red); }
+.error-box { display: flex; flex-direction: column; gap: 8px; }
 .spinner {
   width: 15px; height: 15px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--blurple);

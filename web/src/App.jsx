@@ -154,7 +154,12 @@ function Turn({ turn }) {
           )}
 
           {turn.stage === 'error' && (
-            <div className="stage err">⚠ {turn.message || 'Something went wrong'}</div>
+            <div className="error-box">
+              <div className="stage err">⚠ {turn.message || 'Something went wrong'}</div>
+              <div className="clip-actions">
+                <button className="link danger" onClick={turn.onDelete}>Delete</button>
+              </div>
+            </div>
           )}
 
           {turn.stage === 'done' && (
