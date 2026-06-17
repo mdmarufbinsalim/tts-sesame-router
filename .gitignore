@@ -1,0 +1,6 @@
+node_modules/
+web/dist/
+clips/*.wav
+clips/index.json
+*.log
+.DS_Store
