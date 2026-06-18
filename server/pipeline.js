@@ -14,21 +14,29 @@ const SILENCE_NOISE = '-40dB';
 const MAX_RECORD_MS = 600_000; // 10-min runaway safety cap only
 
 const VERBATIM =
-  'Read the entire following passage aloud, exactly as written — every sentence, word for word — ' +
-  'and add nothing of your own before, between, or after it.';
+  'Read ONLY the following text. Do not add, omit, or continue beyond the final period.';
 
-// Build the spoken instruction file with espeak-ng.
+// Build the spoken instruction file with espeak-ng. Mirrors the prompt format
+// that works best with Sesame:
+//
+//   Read ONLY the following text. Do not add, omit, or continue beyond the final period.
+//
+//   Voice: <delivery description>.
+//
+//   "<the text>"
+//
 //  - raw: play the user's words verbatim into the mic, no wrapper at all.
-//  - systemPrompt: optional delivery/emotion directive spoken before the text.
+//  - systemPrompt: the delivery/voice description (becomes the "Voice:" line).
 async function makeInstruction(text, raw, systemPrompt, file) {
   let phrase;
   if (raw) {
     phrase = text;
   } else {
-    const directive = (systemPrompt || '').trim();
-    // e.g. "Speak in an excited tone. Read the entire following passage aloud,
-    //       every sentence, word for word ... The passage is: <paragraph>"
-    phrase = `${directive ? directive.replace(/\s*$/, '') + '. ' : ''}${VERBATIM} The passage is: ${text}`;
+    const delivery = (systemPrompt || '').trim().replace(/[.\s]*$/, '');
+    const lines = [VERBATIM];
+    if (delivery) lines.push(`Voice: ${delivery}.`);
+    lines.push(`"${text.trim()}"`);
+    phrase = lines.join('\n\n');
   }
   await execFileP('espeak-ng', ['-v', 'en-us', '-s', '150', '-w', file, phrase]);
   const st = await fs.stat(file);

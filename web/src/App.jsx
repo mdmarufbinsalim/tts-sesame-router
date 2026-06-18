@@ -20,16 +20,17 @@ const SPINNER_STAGES = new Set([
 ]);
 const REPLY_STAGES = new Set(['listening', 'speaking']);
 
-// Quick delivery presets — click to fill the system prompt.
+// Quick delivery presets — fill the "Voice:" description. Detailed descriptions
+// (persona + tone + pace + emphasis) work best with Sesame.
 const PRESETS = [
-  ['😀 Excited', 'Speak in an excited, upbeat and energetic tone'],
-  ['😌 Calm', 'Speak calmly, gently and slowly'],
-  ['🤫 Whisper', 'Whisper softly, almost under your breath'],
-  ['😢 Sad', 'Speak in a sad, somber and melancholic tone'],
-  ['😏 Sarcastic', 'Speak in a dry, sarcastic tone'],
-  ['📢 Announcer', 'Speak like an enthusiastic announcer or narrator'],
-  ['🐢 Slow', 'Speak slowly and clearly, enunciating every word'],
-  ['⚡ Fast', 'Speak quickly, with a fast pace'],
+  ['📺 News anchor', 'Professional TV news anchor. Calm, clear, natural pace, with brief pauses at punctuation'],
+  ['🔥 YouTuber', 'Energetic YouTuber. Excited, expressive, and engaging. Fast but clear pace, with emphasis on exciting words and dramatic pauses for suspense'],
+  ['📖 Narrator', 'Warm audiobook narrator. Gentle, unhurried, and soothing, with soft emphasis and natural pauses'],
+  ['🤫 Whisper', 'Soft whisper. Intimate and breathy, very quiet, slow and gentle'],
+  ['🎬 Trailer', 'Dramatic movie-trailer voice. Deep, intense, and suspenseful, with big dramatic pauses'],
+  ['😢 Somber', 'Sad and somber. Slow, low, and melancholic, with heavy pauses'],
+  ['😏 Deadpan', 'Dry and sarcastic. Flat, deadpan delivery with subtle smirking emphasis'],
+  ['🧘 Calm', 'Calm and reassuring. Slow, soft, and steady, like a meditation guide'],
 ];
 const SYS_KEY = 'sesame.systemPrompt';
 
@@ -119,7 +120,7 @@ function Turn({ turn }) {
         <div className="msg-body">
           <div className="msg-name">You <span className="msg-meta">prompt</span></div>
           <div className="msg-text">{turn.text}</div>
-          {turn.systemPrompt ? <div className="delivery-badge">🎭 {turn.systemPrompt}</div> : null}
+          {turn.systemPrompt ? <div className="delivery-badge">🎭 Voice: {turn.systemPrompt}</div> : null}
         </div>
       </div>
 
@@ -340,7 +341,7 @@ export default function App() {
                 className="sys-text"
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
-                placeholder="How should Sesame deliver it? e.g. Speak in an excited, cheerful tone with dramatic pauses."
+                placeholder="Voice: describe the persona, tone, pace & emphasis — e.g. Energetic YouTuber. Excited and expressive, fast but clear, with dramatic pauses."
                 rows={2}
               />
               {raw && <div className="sys-hint">Delivery is ignored in Raw mode.</div>}
