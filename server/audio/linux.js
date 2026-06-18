@@ -148,10 +148,17 @@ export function captureInputArgs() {
 }
 
 // Inject a wav into the virtual mic; resolves when playback finishes.
-export function inject(file) {
+// Pass an AbortSignal to cancel playback early (kills paplay).
+export function inject(file, { signal } = {}) {
   return new Promise((resolve, reject) => {
     const pp = spawn('paplay', ['-d', 'virtmic', file]);
-    pp.on('close', () => resolve());
-    pp.on('error', reject);
+    const onAbort = () => { try { pp.kill('SIGTERM'); } catch {} };
+    if (signal) {
+      if (signal.aborted) onAbort();
+      else signal.addEventListener('abort', onAbort, { once: true });
+    }
+    const cleanup = () => signal && signal.removeEventListener('abort', onAbort);
+    pp.on('close', () => { cleanup(); resolve(); });
+    pp.on('error', (e) => { cleanup(); reject(e); });
   });
 }

@@ -105,23 +105,18 @@ export async function runJob({ text, raw, systemPrompt, clipPath, tmpDir, emit, 
   return { durationSec: trimmed };
 }
 
-// Record capture.monitor to clipPath and inject the instruction. Recording runs
-// until the user presses Stop (registerStopper). ffmpeg also streams live
-// loudness (ebur128) for the visualizer and silence for the "speaking" cue.
+// Two phases:
+//   1) TRANSMIT — play the whole instruction into the virtual mic. Nothing is
+//      recorded yet, so anything Maya/Mike says during this window is ignored.
+//   2) RECORD   — only after the instruction finishes, start ffmpeg and capture
+//      the reply until the user presses Stop. ffmpeg also streams live loudness
+//      (ebur128) for the visualizer and silence for the "speaking" cue.
 function recordUntilStop({ clipPath, instr, schedule, totalMs, emit, onLevel, registerStopper }) {
   return new Promise((resolve, reject) => {
-    // verbose loglevel is required for ebur128 per-frame "M:" loudness lines.
-    const ff = spawn('ffmpeg', [
-      '-hide_banner', '-loglevel', 'verbose',
-      ...captureInputArgs(),
-      '-af', `silencedetect=noise=${SILENCE_NOISE}:d=0.6,ebur128=metadata=1:framelog=verbose`,
-      '-y', clipPath,
-    ]);
-
-    let speechStarted = false;
     let settled = false;
+    let aborted = false;
+    let ff = null;
     let capTimer = null;
-    let lastLevel = 0;
 
     const finish = (err) => {
       if (settled) return;
@@ -130,51 +125,67 @@ function recordUntilStop({ clipPath, instr, schedule, totalMs, emit, onLevel, re
       if (err) reject(err); else resolve({});
     };
 
-    // Manual stop: send 'q' so ffmpeg finalizes the wav header cleanly.
-    const stop = () => {
-      try { ff.stdin.write('q'); } catch {}
-      setTimeout(() => { try { ff.kill('SIGINT'); } catch {} }, 500);
-    };
-    registerStopper(stop);
+    // --- Phase 1: transmit the instruction (no recording yet) ---
+    emit('transmitting', { schedule, totalMs });
+    // While transmitting, Stop aborts playback before any recording starts.
+    const ac = new AbortController();
+    registerStopper(() => { aborted = true; ac.abort(); });
 
-    // Runaway safety only — not the normal way to stop.
-    capTimer = setTimeout(() => { emit('listening', { note: 'max length reached' }); stop(); }, MAX_RECORD_MS);
+    inject(instr, { signal: ac.signal })
+      .then(() => {
+        if (aborted) return finish(new Error('Cancelled before recording started.'));
+        startRecording();
+      })
+      .catch((e) => finish(aborted ? new Error('Cancelled before recording started.') : e));
 
-    let buffered = '';
-    ff.stderr.on('data', (buf) => {
-      buffered += buf.toString();
-      const lines = buffered.split('\n');
-      buffered = lines.pop(); // keep partial line
-      for (const line of lines) {
-        if (line.includes('silence_end') && !speechStarted) {
-          speechStarted = true;
-          emit('speaking');
-        }
-        const m = line.match(/M:\s*(-?\d+(?:\.\d+)?)/);
-        if (m) {
-          const level = lufsToLevel(parseFloat(m[1]));
-          // throttle tiny changes to cut WS chatter
-          if (Math.abs(level - lastLevel) > 0.02 || level === 0) {
-            lastLevel = level;
-            onLevel(level);
+    // --- Phase 2: record the reply ---
+    function startRecording() {
+      emit('listening', { note: 'recording reply — press Stop when finished' });
+
+      // verbose loglevel is required for ebur128 per-frame "M:" loudness lines.
+      ff = spawn('ffmpeg', [
+        '-hide_banner', '-loglevel', 'verbose',
+        ...captureInputArgs(),
+        '-af', `silencedetect=noise=${SILENCE_NOISE}:d=0.6,ebur128=metadata=1:framelog=verbose`,
+        '-y', clipPath,
+      ]);
+
+      // Manual stop: send 'q' so ffmpeg finalizes the wav header cleanly.
+      const stop = () => {
+        try { ff.stdin.write('q'); } catch {}
+        setTimeout(() => { try { ff.kill('SIGINT'); } catch {} }, 500);
+      };
+      registerStopper(stop); // replaces the transmit-phase aborter
+
+      // Runaway safety only — not the normal way to stop.
+      capTimer = setTimeout(() => { emit('listening', { note: 'max length reached' }); stop(); }, MAX_RECORD_MS);
+
+      let speechStarted = false;
+      let lastLevel = 0;
+      let buffered = '';
+      ff.stderr.on('data', (buf) => {
+        buffered += buf.toString();
+        const lines = buffered.split('\n');
+        buffered = lines.pop(); // keep partial line
+        for (const line of lines) {
+          if (line.includes('silence_end') && !speechStarted) {
+            speechStarted = true;
+            emit('speaking');
+          }
+          const m = line.match(/M:\s*(-?\d+(?:\.\d+)?)/);
+          if (m) {
+            const level = lufsToLevel(parseFloat(m[1]));
+            if (Math.abs(level - lastLevel) > 0.02 || level === 0) {
+              lastLevel = level;
+              onLevel(level);
+            }
           }
         }
-      }
-    });
+      });
 
-    ff.on('error', (e) => finish(e));
-    ff.on('close', () => { onLevel(0); finish(); });
-
-    // Once the recorder is live, inject the instruction into the virtual mic
-    // and hand the frontend the karaoke schedule to animate.
-    const sendInstruction = () => {
-      emit('transmitting', { schedule, totalMs });
-      inject(instr)
-        .then(() => emit('listening', { note: 'press Stop when Sesame finishes' }))
-        .catch((e) => finish(e));
-    };
-    // small lead-in so the recorder is definitely capturing first
-    setTimeout(sendInstruction, 400);
+      ff.on('error', (e) => finish(e));
+      ff.on('close', () => { onLevel(0); finish(); });
+    }
   });
 }
 
