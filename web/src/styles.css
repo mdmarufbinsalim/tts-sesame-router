@@ -1,28 +1,30 @@
-/* ---- Discord-flavoured theme ---- */
 :root {
-  --app: #1e1f22;        /* darkest gutters */
-  --sidebar: #2b2d31;    /* left panel */
-  --chat: #313338;       /* main */
-  --input: #383a40;      /* fields */
-  --hover: #404249;
-  --divider: #232428;
-  --line: #3f4147;       /* subtle separators */
+  --app: #000000;
+  --sidebar: #101010;
+  --chat: #000000;
+  --input: #202020;
 
-  --text: #dbdee1;
-  --muted: #949ba4;
-  --faint: #80848e;
-  --head: #f2f3f5;
+  --hover: rgba(255, 255, 255, 0.08);
+  --divider: rgba(255, 255, 255, 0.08);
+  --line: rgba(255, 255, 255, 0.12);
 
-  --blurple: #5865f2;
-  --blurple-hover: #4752c4;
-  --green: #23a55a;
-  --green-bright: #2dc46e;
-  --red: #da373c;
-  --yellow: #f0b232;
+  --head: #ffffff;
+  --text: #ececec;
+  --muted: #b4b4b4;
+  --faint: #7d7d7d;
 
-  --radius: 8px;
-  --font: 'Inter', 'gg sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --primary: #10a37f;
+  --primary-hover: #0d8f6f;
+
+  --green: #10a37f;
+  --green-bright: #19c37d;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+
+  --radius: 14px;
+  --font: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body { background: var(--app); color: var(--text); font-family: var(--font); font-size: 15px; -webkit-font-smoothing: antialiased; }
